@@ -51,7 +51,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      # Update Kubernetes deployment with new image
+      # Deploy CloudFormation Stack
+      - name: Deploy CloudFormation Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file cloudformation-template.yaml \
+            --stack-name my-laravel-stack \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --region ap-south-1
+
+      # Update Kubernetes deployment with the new image
       - name: Deploy to EKS using Helm
         run: |
           kubectl config use-context arn:aws:eks:ap-south-1:650251721226:cluster/my-eks-cluster
