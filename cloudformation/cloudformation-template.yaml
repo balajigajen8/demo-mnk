@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  MyECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: my-laravel-repo
+
+  MyRDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: my-laravel-db
+      DBName: laravelDB
+      Engine: MySQL
+      MasterUsername: admin
+      MasterUserPassword: Gajen@97
+      AllocatedStorage: 5
+      DBInstanceClass: db.t2.micro
+
+  MyEKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: my-eks-cluster
+      RoleArn: arn:aws:iam::650251721226:role/eksClusterRole
+      ResourcesVpcConfig:
+        SubnetIds:
+          - subnet-0fdc7d89e2b460ee1
+          - subnet-0b0a0583d221d317b
+        SecurityGroupIds:
+          - sg-044b4b6bf5141af7f
+      Version: "1.21"
