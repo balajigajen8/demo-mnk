@@ -1,34 +1,39 @@
-# Use the official PHP image with Nginx
+# Use the official PHP image with FPM
 FROM php:8.0-fpm
 
-# Install dependencies and Nginx
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
     nginx \
-    libpng-dev libjpeg-dev libfreetype6-dev zip git \
+    libpng-dev libjpeg-dev libfreetype6-dev zip git unzip curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql \
-    && apt-get clean
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /var/www
 
-# Copy Laravel app into the container
+# Copy application files to the container
 COPY . .
 
-# Install Composer
+# Install Composer globally
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Install Laravel dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Ensure Composer dependencies are installed correctly
+RUN composer install --no-dev --optimize-autoloader --verbose || { \
+    echo "Composer install failed"; \
+    cat /var/www/composer.log; \
+    exit 1; \
+}
 
-# Copy Nginx configuration
+# Copy custom Nginx configuration
 COPY nginx/default.conf /etc/nginx/sites-available/default
 
-# Set the correct permissions
-RUN chown -R www-data:www-data /var/www
+# Ensure proper permissions for Laravel storage and cache
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage /var/www/bootstrap/cache
 
-# Expose port 80 for web traffic
+# Expose the port for Nginx
 EXPOSE 80
 
-# Start Nginx and PHP-FPM
-CMD service nginx start && php-fpm
+# Start Nginx and PHP-FPM services
+CMD ["sh", "-c", "service nginx start && php-fpm"]
