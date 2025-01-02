@@ -1,0 +1,58 @@
+name: CI/CD for Laravel App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Login to Amazon ECR
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Build and tag the Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t my-laravel-app .
+          docker tag my-laravel-app:latest 650251721226.dkr.ecr.ap-south-1.amazonaws.com/my-laravel-repo:latest
+
+      # Push the Docker image to ECR
+      - name: Push Docker image to ECR
+        run: |
+          docker push 650251721226.dkr.ecr.ap-south-1.amazonaws.com/my-laravel-repo:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      # Update Kubernetes deployment with new image
+      - name: Deploy to EKS using Helm
+        run: |
+          kubectl config use-context arn:aws:eks:ap-south-1:650251721226:cluster/my-eks-cluster
+          helm upgrade --install laravel-app ./helm-chart -f helm-chart/values.yaml --set image.tag=latest
