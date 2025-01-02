@@ -1,0 +1,11 @@
+image:
+  repository: 650251721226.dkr.ecr.ap-south-1.amazonaws.com/my-laravel-repo
+  tag: latest
+
+replicaCount: 1
+
+service:
+  type: LoadBalancer
+  port: 80
+
+resources: {}
